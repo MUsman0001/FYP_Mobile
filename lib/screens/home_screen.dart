@@ -4,6 +4,7 @@ import '../core/app_theme.dart';
 import '../features/auth/auth_api.dart';
 import '../features/auth/auth_repository.dart';
 import 'login_screen.dart';
+import 'schedule_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -44,6 +45,12 @@ class _HomeScreenState extends State<HomeScreen> {
       MaterialPageRoute(builder: (_) => const LoginScreen()),
       (_) => false,
     );
+  }
+
+  void _navigateToSchedules() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const ScheduleScreen()));
   }
 
   @override
@@ -212,15 +219,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 child: _buildActionButton(
                                   icon: Icons.schedule,
                                   label: 'Schedules',
-                                  onTap: () {
-                                    // : Navigate to schedules (2-3 weeks later)
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Schedules coming soon!'),
-                                        backgroundColor: AppTheme.accentGreen,
-                                      ),
-                                    );
-                                  },
+                                  onTap:
+                                      _navigateToSchedules, // This uses the schedule screen
                                 ),
                               ),
                               const SizedBox(width: 16),
