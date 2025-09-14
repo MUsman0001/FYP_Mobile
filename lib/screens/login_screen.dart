@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../core/api_client.dart';
-import '../core/app_theme.dart';
 import '../features/auth/auth_api.dart';
 import '../features/auth/auth_repository.dart';
 import 'home_screen.dart';
@@ -62,90 +61,107 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
+        width: double.infinity,
+        height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF00704A), Color(0xFF1B825D), Color(0xFF3A9D68)],
+            colors: [Color(0xFF003f2a), Color(0xFF005a36)],
           ),
         ),
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               child: Card(
-                elevation: 8,
+                elevation: 12,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(24),
                 ),
+                color: Colors.white,
                 child: Padding(
-                  padding: const EdgeInsets.all(32),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 28,
+                    vertical: 36,
+                  ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Your PIA Logo
+                      // Logo
                       Image.asset(
                         'assets/images/logo-new.png',
-                        height: 80,
-                        width: 80,
+                        height: 90,
                         fit: BoxFit.contain,
                       ),
-                      const SizedBox(height: 24),
-
+                      const SizedBox(height: 22),
                       // Title
                       Text(
-                        'AeroCrew Flow',
-                        style: Theme.of(context).textTheme.headlineMedium
-                            ?.copyWith(
-                              color: AppTheme.primaryGreen,
-                              fontWeight: FontWeight.bold,
-                            ),
+                        'Welcome Back',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF003f2a),
+                          letterSpacing: 1.1,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Mobile Access',
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Colors.grey[600],
-                        ),
+                        'Sign in to continue',
+                        style: TextStyle(fontSize: 16, color: Colors.grey[700]),
                       ),
                       const SizedBox(height: 32),
-
-                      // Login Form
+                      // P-no or Email
                       TextField(
                         controller: pNoController,
-                        decoration: const InputDecoration(
-                          labelText: 'P No',
-                          prefixIcon: Icon(Icons.person),
+                        decoration: InputDecoration(
+                          labelText: 'P-no or Email',
+                          prefixIcon: Icon(
+                            Icons.person,
+                            color: Color(0xFF003f2a),
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[100],
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                         ),
                         textInputAction: TextInputAction.next,
                         onSubmitted: (_) => FocusScope.of(context).nextFocus(),
                       ),
-                      const SizedBox(height: 16),
-
+                      const SizedBox(height: 18),
+                      // Password
                       TextField(
                         controller: passwordController,
                         decoration: InputDecoration(
                           labelText: 'Password',
-                          prefixIcon: const Icon(Icons.lock),
+                          prefixIcon: Icon(
+                            Icons.lock,
+                            color: Color(0xFF003f2a),
+                          ),
                           suffixIcon: IconButton(
                             icon: Icon(
                               showPassword
                                   ? Icons.visibility
                                   : Icons.visibility_off,
+                              color: Color(0xFF003f2a),
                             ),
                             onPressed: () =>
                                 setState(() => showPassword = !showPassword),
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[100],
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
                           ),
                         ),
                         obscureText: !showPassword,
                         onSubmitted: (_) => _handleLogin(),
                       ),
-
-                      // Error Message
                       if (errorText != null) ...[
                         const SizedBox(height: 16),
                         Container(
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
                             color: Colors.red[50],
                             border: Border.all(color: Colors.red[200]!),
@@ -165,31 +181,45 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ],
-
-                      const SizedBox(height: 24),
-
+                      const SizedBox(height: 28),
                       // Login Button
                       SizedBox(
                         width: double.infinity,
                         height: 50,
                         child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            elevation: 6,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            backgroundColor: Color(0xFF003f2a),
+                            foregroundColor: Colors.white,
+                            textStyle: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 17,
+                            ),
+                          ),
                           onPressed: isLoading ? null : _handleLogin,
                           child: isLoading
                               ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
+                                  height: 22,
+                                  width: 22,
                                   child: CircularProgressIndicator(
-                                    strokeWidth: 2,
+                                    strokeWidth: 2.5,
                                     valueColor: AlwaysStoppedAnimation<Color>(
                                       Colors.white,
                                     ),
                                   ),
                                 )
-                              : const Text(
-                                  'Login',
-                                  style: TextStyle(fontSize: 16),
-                                ),
+                              : const Text('Login'),
                         ),
+                      ),
+                      const SizedBox(height: 18),
+                      // Footer
+                      Text(
+                        '© 2025 Pakistan International Airlines',
+                        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),
