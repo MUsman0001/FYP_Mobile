@@ -20,4 +20,22 @@ class ScheduleApi {
     );
     return response;
   }
+
+  // Calendar: returns top-level array of events
+  Future<List<dynamic>> getCalendarEvents({String? start, String? end}) async {
+    final response = await client.getList(
+      '/crew/calendar/events',
+      queryParameters: {
+        if (start != null) 'start': start,
+        if (end != null) 'end': end,
+      },
+    );
+    return response;
+  }
+
+  // Calendar: route details for a specific route
+  Future<Map<String, dynamic>> getCalendarRouteDetails(String routeNo) async {
+    final response = await client.get('/crew/calendar/route/$routeNo');
+    return response;
+  }
 }

@@ -5,6 +5,7 @@ import '../features/auth/auth_api.dart';
 import '../features/auth/auth_repository.dart';
 import 'login_screen.dart';
 import 'schedule_screen.dart';
+import 'calendar_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -51,6 +52,12 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (_) => const ScheduleScreen()));
+  }
+
+  void _navigateToCalendar() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const CalendarScreen()));
   }
 
   @override
@@ -226,19 +233,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               const SizedBox(width: 16),
                               Expanded(
                                 child: _buildActionButton(
-                                  icon: Icons.people,
-                                  label: 'Crew',
-                                  onTap: () {
-                                    // : Navigate to crew (2-3 weeks later)
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'Crew management coming soon!',
-                                        ),
-                                        backgroundColor: AppTheme.accentGreen,
-                                      ),
-                                    );
-                                  },
+                                  icon: Icons.calendar_month,
+                                  label: 'Calendar',
+                                  onTap: _navigateToCalendar,
                                 ),
                               ),
                             ],

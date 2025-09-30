@@ -42,6 +42,21 @@ class ApiClient {
     }
   }
 
+  // GET helper for endpoints that return a top-level JSON array
+  Future<List<dynamic>> getList(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    try {
+      final response = await dio.get(path, queryParameters: queryParameters);
+      final data = response.data;
+      if (data is List) return data;
+      throw Exception('Expected a JSON array but got: ${data.runtimeType}');
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   Future<Map<String, dynamic>> post(
     String path, {
     Map<String, dynamic>? data,
