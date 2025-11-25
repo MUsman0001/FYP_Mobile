@@ -27,4 +27,13 @@ class AuthRepository {
     final token = await storage.readToken();
     return token != null && token.isNotEmpty;
   }
+
+  Future<void> requestPasswordReset(String email) =>
+      api.requestPasswordReset(email: email);
+
+  Future<void> verifyResetCode(String email, String code) =>
+      api.verifyResetCode(email: email, code: code);
+
+  Future<void> resetPassword(String email, String code, String newPassword) =>
+      api.resetPassword(email: email, code: code, newPassword: newPassword);
 }

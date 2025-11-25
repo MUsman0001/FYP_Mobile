@@ -27,4 +27,34 @@ class AuthApi {
   Future<void> logout() async {
     await client.dio.post('/auth/logout');
   }
+
+  Future<void> requestPasswordReset({required String email}) async {
+    await client.dio.post('/auth/forgot-password', data: {'email': email});
+  }
+
+  Future<void> verifyResetCode({
+    required String email,
+    required String code,
+  }) async {
+    await client.dio.post(
+      '/auth/verify-reset-code',
+      data: {'email': email, 'code': code},
+    );
+  }
+
+  Future<void> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    await client.dio.post(
+      '/auth/reset-password',
+      data: {
+        'email': email,
+        'code': code,
+        'password': newPassword,
+        'password_confirmation': newPassword,
+      },
+    );
+  }
 }

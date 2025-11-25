@@ -2,22 +2,20 @@ import 'package:flutter/material.dart';
 import '../core/api_client.dart';
 import '../features/auth/auth_api.dart';
 import '../features/auth/auth_repository.dart';
-import 'home_screen.dart';
-import 'forgot_password_screen.dart';
+import 'reset_password_screen.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class ForgotPasswordScreen extends StatefulWidget {
+  const ForgotPasswordScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
-  final pNoController = TextEditingController();
-  final passwordController = TextEditingController();
+class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+  final emailController = TextEditingController();
   bool isLoading = false;
-  bool showPassword = false;
   String? errorText;
+  String? successText;
 
   late final AuthRepository authRepository;
 
@@ -33,33 +31,45 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
-    pNoController.dispose();
-    passwordController.dispose();
+    emailController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleLogin() async {
-    if (pNoController.text.trim().isEmpty || passwordController.text.isEmpty) {
-      setState(() => errorText = 'Please fill in all fields');
+  Future<void> _handleRequestReset() async {
+    if (emailController.text.trim().isEmpty) {
+      setState(() => errorText = 'Please enter your email address');
       return;
     }
 
     setState(() {
       isLoading = true;
       errorText = null;
+      successText = null;
     });
 
     try {
-      await authRepository.login(
-        pNoController.text.trim(),
-        passwordController.text,
-      );
+      await authRepository.requestPasswordReset(emailController.text.trim());
       if (!mounted) return;
-      Navigator.of(
-        context,
-      ).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
+
+      setState(() {
+        successText =
+            'Password reset code sent to your email. Check your inbox.';
+      });
+
+      // Navigate to reset password screen after 2 seconds
+      await Future.delayed(const Duration(seconds: 2));
+      if (!mounted) return;
+
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) =>
+              ResetPasswordScreen(email: emailController.text.trim()),
+        ),
+      );
     } catch (e) {
-      setState(() => errorText = 'Login failed. Check P No and password.');
+      setState(
+        () => errorText = 'Unable to send reset code. Please try again.',
+      );
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
@@ -82,6 +92,16 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  // Back button
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back, color: brand),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
                   // Logo
                   Image.asset(
                     'assets/images/logo-new.png',
@@ -89,9 +109,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     fit: BoxFit.contain,
                   ),
                   const SizedBox(height: 28),
+
                   // Titles
                   const Text(
-                    'Sign in',
+                    'Forgot Password?',
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w700,
@@ -100,19 +121,20 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Welcome back. Please enter your details.',
+                    'Enter your P-No or email to receive a password reset link.',
                     style: TextStyle(fontSize: 15, color: Colors.grey[700]),
+                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
 
-                  // P-no or Email
+                  // Email input
                   SizedBox(
                     width: 360,
                     child: TextField(
-                      controller: pNoController,
+                      controller: emailController,
                       decoration: InputDecoration(
-                        labelText: 'P-no or Email',
-                        prefixIcon: Icon(Icons.person_outline, color: brand),
+                        labelText: 'Email Address',
+                        prefixIcon: Icon(Icons.email_outlined, color: brand),
                         filled: true,
                         fillColor: brandFill,
                         border: OutlineInputBorder(
@@ -135,56 +157,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           vertical: 14,
                         ),
                       ),
-                      textInputAction: TextInputAction.next,
-                      onSubmitted: (_) => FocusScope.of(context).nextFocus(),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Password
-                  SizedBox(
-                    width: 360,
-                    child: TextField(
-                      controller: passwordController,
-                      decoration: InputDecoration(
-                        labelText: 'Password',
-                        prefixIcon: Icon(Icons.lock_outline, color: brand),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            showPassword
-                                ? Icons.visibility
-                                : Icons.visibility_off,
-                            color: brand,
-                          ),
-                          onPressed: () =>
-                              setState(() => showPassword = !showPassword),
-                        ),
-                        filled: true,
-                        fillColor: brandFill,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: brandBorder),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: brandBorder),
-                        ),
-                        focusedBorder: const OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(12)),
-                          borderSide: BorderSide(color: brand, width: 1.5),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 14,
-                        ),
-                      ),
-                      obscureText: !showPassword,
-                      onSubmitted: (_) => _handleLogin(),
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) => _handleRequestReset(),
                     ),
                   ),
 
+                  // Error message
                   if (errorText != null) ...[
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     SizedBox(
                       width: 360,
                       child: Container(
@@ -210,9 +190,40 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ],
 
-                  const SizedBox(height: 16),
+                  // Success message
+                  if (successText != null) ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: 360,
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.green[50],
+                          border: Border.all(color: Colors.green[200]!),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.check_circle_outline,
+                              color: Colors.green[700],
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                successText!,
+                                style: TextStyle(color: Colors.green[700]),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
 
-                  // Sign in button
+                  const SizedBox(height: 24),
+
+                  // Send reset link button
                   SizedBox(
                     width: 360,
                     height: 52,
@@ -229,7 +240,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           fontSize: 16,
                         ),
                       ),
-                      onPressed: isLoading ? null : _handleLogin,
+                      onPressed: isLoading ? null : _handleRequestReset,
                       child: isLoading
                           ? const SizedBox(
                               height: 22,
@@ -241,34 +252,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                             )
-                          : const Text('Sign in'),
+                          : const Text('Send Reset Link'),
                     ),
                   ),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 18),
 
-                  // Forgot password
-                  SizedBox(
-                    width: 360,
-                    child: Align(
-                      alignment: Alignment.center,
-                      child: TextButton(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const ForgotPasswordScreen(),
-                            ),
-                          );
-                        },
-                        style: TextButton.styleFrom(
-                          foregroundColor: brand,
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          minimumSize: const Size(0, 36),
-                        ),
-                        child: const Text('Forgot password?'),
-                      ),
-                    ),
-                  ),
                   // Footer
                   Text(
                     '© 2025 Pakistan International Airlines',

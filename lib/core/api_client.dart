@@ -93,9 +93,8 @@ class ApiClient {
   Exception _handleError(DioException e) {
     if (e.response != null) {
       // Server responded with error status
-      final statusCode = e.response?.statusCode;
       final message = e.response?.data?['message'] ?? 'Server error occurred';
-      return Exception('HTTP $statusCode: $message');
+      return Exception('$message');
     } else if (e.type == DioExceptionType.connectionTimeout ||
         e.type == DioExceptionType.receiveTimeout) {
       return Exception(
@@ -104,7 +103,7 @@ class ApiClient {
     } else if (e.type == DioExceptionType.connectionError) {
       return Exception('No internet connection. Please check your network.');
     } else {
-      return Exception('An unexpected error occurred: ${e.message}');
+      return Exception('An error occurred. Please try again.');
     }
   }
 }

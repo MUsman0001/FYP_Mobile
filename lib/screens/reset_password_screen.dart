@@ -2,22 +2,26 @@ import 'package:flutter/material.dart';
 import '../core/api_client.dart';
 import '../features/auth/auth_api.dart';
 import '../features/auth/auth_repository.dart';
-import 'home_screen.dart';
-import 'forgot_password_screen.dart';
+import 'login_screen.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class ResetPasswordScreen extends StatefulWidget {
+  final String email;
+
+  const ResetPasswordScreen({super.key, required this.email});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
-  final pNoController = TextEditingController();
+class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
+  final codeController = TextEditingController();
   final passwordController = TextEditingController();
+  final confirmPasswordController = TextEditingController();
   bool isLoading = false;
   bool showPassword = false;
+  bool showConfirmPassword = false;
   String? errorText;
+  String? successText;
 
   late final AuthRepository authRepository;
 
@@ -33,33 +37,62 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
-    pNoController.dispose();
+    codeController.dispose();
     passwordController.dispose();
+    confirmPasswordController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleLogin() async {
-    if (pNoController.text.trim().isEmpty || passwordController.text.isEmpty) {
-      setState(() => errorText = 'Please fill in all fields');
+  Future<void> _handleResetPassword() async {
+    // Validation
+    if (codeController.text.trim().isEmpty) {
+      setState(() => errorText = 'Please enter the verification code');
+      return;
+    }
+
+    if (passwordController.text.isEmpty) {
+      setState(() => errorText = 'Please enter a new password');
+      return;
+    }
+
+    if (passwordController.text.length < 6) {
+      setState(() => errorText = 'Password must be at least 6 characters');
+      return;
+    }
+
+    if (passwordController.text != confirmPasswordController.text) {
+      setState(() => errorText = 'Passwords do not match');
       return;
     }
 
     setState(() {
       isLoading = true;
       errorText = null;
+      successText = null;
     });
 
     try {
-      await authRepository.login(
-        pNoController.text.trim(),
+      await authRepository.resetPassword(
+        widget.email,
+        codeController.text.trim(),
         passwordController.text,
       );
+
       if (!mounted) return;
+
+      setState(() {
+        successText = 'Password reset successfully! Redirecting to login...';
+      });
+
+      // Navigate back to login screen after 2 seconds
+      await Future.delayed(const Duration(seconds: 2));
+      if (!mounted) return;
+
       Navigator.of(
         context,
-      ).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
+      ).pushReplacement(MaterialPageRoute(builder: (_) => const LoginScreen()));
     } catch (e) {
-      setState(() => errorText = 'Login failed. Check P No and password.');
+      setState(() => errorText = 'Password reset failed. Please try again.');
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
@@ -82,6 +115,16 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  // Back button
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back, color: brand),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
                   // Logo
                   Image.asset(
                     'assets/images/logo-new.png',
@@ -89,9 +132,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     fit: BoxFit.contain,
                   ),
                   const SizedBox(height: 28),
+
                   // Titles
                   const Text(
-                    'Sign in',
+                    'Reset Password',
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w700,
@@ -100,19 +144,20 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Welcome back. Please enter your details.',
+                    'Enter the verification code and your new password.',
                     style: TextStyle(fontSize: 15, color: Colors.grey[700]),
+                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
 
-                  // P-no or Email
+                  // Verification Code
                   SizedBox(
                     width: 360,
                     child: TextField(
-                      controller: pNoController,
+                      controller: codeController,
                       decoration: InputDecoration(
-                        labelText: 'P-no or Email',
-                        prefixIcon: Icon(Icons.person_outline, color: brand),
+                        labelText: 'Verification Code',
+                        prefixIcon: Icon(Icons.code, color: brand),
                         filled: true,
                         fillColor: brandFill,
                         border: OutlineInputBorder(
@@ -141,13 +186,13 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 14),
 
-                  // Password
+                  // New Password
                   SizedBox(
                     width: 360,
                     child: TextField(
                       controller: passwordController,
                       decoration: InputDecoration(
-                        labelText: 'Password',
+                        labelText: 'New Password',
                         prefixIcon: Icon(Icons.lock_outline, color: brand),
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -169,9 +214,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(color: brandBorder),
                         ),
-                        focusedBorder: const OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(12)),
-                          borderSide: BorderSide(color: brand, width: 1.5),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: brand,
+                            width: 1.5,
+                          ),
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 14,
@@ -179,12 +227,62 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       obscureText: !showPassword,
-                      onSubmitted: (_) => _handleLogin(),
+                      textInputAction: TextInputAction.next,
+                      onSubmitted: (_) => FocusScope.of(context).nextFocus(),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Confirm Password
+                  SizedBox(
+                    width: 360,
+                    child: TextField(
+                      controller: confirmPasswordController,
+                      decoration: InputDecoration(
+                        labelText: 'Confirm Password',
+                        prefixIcon: Icon(Icons.lock_outline, color: brand),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            showConfirmPassword
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                            color: brand,
+                          ),
+                          onPressed: () => setState(
+                            () => showConfirmPassword = !showConfirmPassword,
+                          ),
+                        ),
+                        filled: true,
+                        fillColor: brandFill,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: brandBorder),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: brandBorder),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: brand,
+                            width: 1.5,
+                          ),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 14,
+                        ),
+                      ),
+                      obscureText: !showConfirmPassword,
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) => _handleResetPassword(),
                     ),
                   ),
 
+                  // Error message
                   if (errorText != null) ...[
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     SizedBox(
                       width: 360,
                       child: Container(
@@ -210,9 +308,40 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ],
 
+                  // Success message
+                  if (successText != null) ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: 360,
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.green[50],
+                          border: Border.all(color: Colors.green[200]!),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.check_circle_outline,
+                              color: Colors.green[700],
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                successText!,
+                                style: TextStyle(color: Colors.green[700]),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+
                   const SizedBox(height: 16),
 
-                  // Sign in button
+                  // Reset Password button
                   SizedBox(
                     width: 360,
                     height: 52,
@@ -229,7 +358,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           fontSize: 16,
                         ),
                       ),
-                      onPressed: isLoading ? null : _handleLogin,
+                      onPressed: isLoading ? null : _handleResetPassword,
                       child: isLoading
                           ? const SizedBox(
                               height: 22,
@@ -241,34 +370,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                             )
-                          : const Text('Sign in'),
+                          : const Text('Reset Password'),
                     ),
                   ),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 18),
 
-                  // Forgot password
-                  SizedBox(
-                    width: 360,
-                    child: Align(
-                      alignment: Alignment.center,
-                      child: TextButton(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const ForgotPasswordScreen(),
-                            ),
-                          );
-                        },
-                        style: TextButton.styleFrom(
-                          foregroundColor: brand,
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          minimumSize: const Size(0, 36),
-                        ),
-                        child: const Text('Forgot password?'),
-                      ),
-                    ),
-                  ),
                   // Footer
                   Text(
                     '© 2025 Pakistan International Airlines',
