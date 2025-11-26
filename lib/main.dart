@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Auth Demo',
+      title: 'AeroCrew Flow',
       theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.indigo),
       home: FutureBuilder<bool>(
         future: _checkLoggedIn(),
@@ -32,6 +32,8 @@ class MyApp extends StatelessWidget {
               body: Center(child: CircularProgressIndicator()),
             );
           }
+          // If user is logged in, show HomeScreen
+          // If not logged in, show LoginScreen (MFA flow is handled in login_screen.dart)
           return snapshot.data! ? const HomeScreen() : const LoginScreen();
         },
       ),

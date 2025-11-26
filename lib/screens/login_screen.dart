@@ -4,6 +4,7 @@ import '../features/auth/auth_api.dart';
 import '../features/auth/auth_repository.dart';
 import 'home_screen.dart';
 import 'forgot_password_screen.dart';
+import 'mfa_verification_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -50,14 +51,32 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      await authRepository.login(
+      final result = await authRepository.login(
         pNoController.text.trim(),
         passwordController.text,
       );
+
       if (!mounted) return;
-      Navigator.of(
-        context,
-      ).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
+
+      // Check if MFA is required
+      if (result.requiresMfa && result.userId != null) {
+        // Navigate to MFA verification screen
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => MfaVerificationScreen(
+              userId: result.userId!,
+              email: result.user['email'] ?? 'your email',
+              pNo: result.user['p_no'] ?? '',
+              userName: result.user['name'] ?? 'User',
+            ),
+          ),
+        );
+      } else {
+        // MFA not required, go to home
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      }
     } catch (e) {
       setState(() => errorText = 'Login failed. Check P No and password.');
     } finally {

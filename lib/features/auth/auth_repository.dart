@@ -7,10 +7,41 @@ class AuthRepository {
 
   AuthRepository({required this.api, required this.storage});
 
-  Future<Map<String, dynamic>> login(String pNo, String password) async {
-    final (token, user) = await api.login(pNo: pNo, password: password);
+  /// Login - returns (user, requiresMfa, userId)
+  /// If MFA is required, userId will be set and token will be null
+  /// If MFA is not required, token will be saved automatically
+  Future<({Map<String, dynamic> user, bool requiresMfa, int? userId})> login(
+    String pNo,
+    String password,
+  ) async {
+    final result = await api.login(pNo: pNo, password: password);
+
+    if (!result.requiresMfa && result.token != null) {
+      // MFA not required - save token immediately
+      await storage.saveToken(result.token!);
+    }
+
+    return (
+      user: result.user,
+      requiresMfa: result.requiresMfa,
+      userId: result.userId,
+    );
+  }
+
+  /// Verify MFA code and save token
+  Future<Map<String, dynamic>> verifyMfa({
+    required int userId,
+    required String code,
+  }) async {
+    final (token, user) = await api.verifyMfa(userId: userId, code: code);
+    // Save token after MFA verification
     await storage.saveToken(token);
     return user;
+  }
+
+  /// Resend MFA code
+  Future<void> resendMfaCode({required int userId}) async {
+    await api.resendMfaCode(userId: userId);
   }
 
   Future<Map<String, dynamic>> getCurrentUser() => api.getCurrentUser();
