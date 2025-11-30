@@ -6,6 +6,7 @@ import '../features/auth/auth_repository.dart';
 import 'login_screen.dart';
 import 'schedule_screen.dart';
 import 'calendar_screen.dart';
+import 'leave_requests_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -58,6 +59,12 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (_) => const CalendarScreen()));
+  }
+
+  void _navigateToLeaveRequests() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const LeaveRequestsScreen()));
   }
 
   @override
@@ -238,6 +245,22 @@ class _HomeScreenState extends State<HomeScreen> {
                                   onTap: _navigateToCalendar,
                                 ),
                               ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildActionButton(
+                                  icon: Icons.event_busy,
+                                  label: 'Leave Requests',
+                                  onTap: _navigateToLeaveRequests,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              const Expanded(
+                                child: SizedBox(),
+                              ), // Placeholder for future action
                             ],
                           ),
                         ],
