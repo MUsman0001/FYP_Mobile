@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 import '../core/api_client.dart';
-import '../core/app_theme.dart';
 import '../features/schedule/schedule_api.dart';
 import '../features/schedule/schedule_repository.dart';
+
+const Color _darkBg = Color(0xFF0f172a);
+const Color _darkBg2 = Color(0xFF0b1224);
+const Color _cardBg = Color(0xFF111a2e);
+const Color _accent = Color(0xFF14b8a6);
+const Color _border = Color(0xFF1f2b3f);
+const Color _softText = Color(0xFF94a3b8);
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -20,13 +26,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
   final CalendarController _controller = CalendarController();
   List<Appointment> _appointments = <Appointment>[];
   String? _loadedMonthKey; // e.g. 2025-09
-
-  // Palette for consistency with schedule/home screens
-  static const Color _darkBg = Color(0xFF0f172a);
-  static const Color _darkBg2 = Color(0xFF0b1224);
-  static const Color _accent = Color(0xFF14b8a6);
-  static const Color _border = Color(0xFF1f2b3f);
-  static const Color _softText = Color(0xFF94a3b8);
 
   @override
   void initState() {
@@ -105,6 +104,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
+        backgroundColor: Colors.transparent,
         builder: (_) => _RouteDetailsSheet(data: data),
       );
     } catch (e) {
@@ -113,6 +113,115 @@ class _CalendarScreenState extends State<CalendarScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text('Failed to load route: $e')));
     }
+  }
+
+  bool _isSameDate(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  Widget _buildMonthCell(BuildContext context, MonthCellDetails details) {
+    final List<Object> appointments = details.appointments;
+    final bool hasRoutes = appointments.isNotEmpty;
+    final Appointment? firstRoute = hasRoutes
+        ? appointments.first as Appointment
+        : null;
+    String? routeLabel;
+    if (firstRoute != null) {
+      final String subject = firstRoute.subject.toString().trim();
+      if (subject.isNotEmpty) {
+        routeLabel = subject;
+      } else {
+        final String notes = firstRoute.notes?.toString().trim() ?? '';
+        if (notes.isNotEmpty) {
+          routeLabel = notes;
+        }
+      }
+    }
+
+    final DateTime today = DateTime.now();
+    final bool isToday = _isSameDate(details.date, today);
+    final bool inCurrentMonth =
+        details.date.month == focusedMonth.month &&
+        details.date.year == focusedMonth.year;
+
+    Color dayTextColor;
+    if (isToday) {
+      dayTextColor = Colors.white;
+    } else if (inCurrentMonth) {
+      dayTextColor = Colors.white70;
+    } else {
+      dayTextColor = _softText.withValues(alpha: 0.35);
+    }
+
+    final Color routeTextColor;
+    if (isToday) {
+      routeTextColor = Colors.white;
+    } else if (inCurrentMonth) {
+      routeTextColor = _accent;
+    } else {
+      routeTextColor = _accent.withValues(alpha: 0.4);
+    }
+
+    final BoxDecoration dayDecoration;
+    if (isToday) {
+      dayDecoration = BoxDecoration(
+        color: _accent,
+        borderRadius: BorderRadius.circular(12),
+        border: hasRoutes ? Border.all(color: Colors.white, width: 1.5) : null,
+      );
+    } else if (hasRoutes) {
+      dayDecoration = BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _accent, width: 1.5),
+      );
+    } else {
+      dayDecoration = BoxDecoration(borderRadius: BorderRadius.circular(12));
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(4),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        alignment: Alignment.center,
+        child: Container(
+          width: double.infinity,
+          decoration: dayDecoration,
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '${details.date.day}',
+                style: TextStyle(
+                  color: dayTextColor,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
+              ),
+              if (routeLabel != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    routeLabel,
+                    style: TextStyle(
+                      color: routeTextColor,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -275,24 +384,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
                             ),
                             monthViewSettings: MonthViewSettings(
                               appointmentDisplayMode:
-                                  MonthAppointmentDisplayMode.indicator,
+                                  MonthAppointmentDisplayMode.none,
                               showAgenda: false,
-                              monthCellStyle: MonthCellStyle(
+                              monthCellStyle: const MonthCellStyle(
                                 backgroundColor: Colors.transparent,
-                                textStyle: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                leadingDatesTextStyle: TextStyle(
-                                  color: _softText.withValues(alpha: 0.4),
-                                ),
-                                trailingDatesTextStyle: TextStyle(
-                                  color: _softText.withValues(alpha: 0.4),
-                                ),
-                                todayBackgroundColor: _accent,
                               ),
                             ),
+                            monthCellBuilder: _buildMonthCell,
                             onViewChanged: (details) {
                               final visible = details.visibleDates;
                               if (visible.isNotEmpty) {
@@ -306,9 +404,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
                               }
                             },
                             onTap: (details) {
-                              if ((details.appointments?.isNotEmpty ?? false)) {
-                                final app =
-                                    details.appointments!.first as Appointment;
+                              final appointments = details.appointments;
+                              if (appointments != null &&
+                                  appointments.isNotEmpty) {
+                                final app = appointments.first as Appointment;
                                 final routeNo = app.notes;
                                 if (routeNo is String && routeNo.isNotEmpty) {
                                   _openRouteDetails(routeNo);
@@ -380,6 +479,17 @@ class _RouteDetailsSheet extends StatelessWidget {
     final crew = List<Map<String, dynamic>>.from(
       data['CrewMembers'] ?? const [],
     );
+    final statusText = (data['Status']?.toString() ?? '').toUpperCase().trim();
+    final bool isCancelled =
+        statusText.contains('CANCEL') || statusText.contains('REJECT');
+    final bool isDelayed = statusText.contains('DELAY');
+    final Color statusColor = isCancelled
+        ? const Color(0xFFef4444)
+        : isDelayed
+        ? const Color(0xFFf97316)
+        : _accent;
+    final Color statusBg = statusColor.withValues(alpha: 0.18);
+    final Color statusBorder = statusColor.withValues(alpha: 0.35);
 
     return Padding(
       padding: MediaQuery.of(context).viewInsets,
@@ -388,141 +498,249 @@ class _RouteDetailsSheet extends StatelessWidget {
         minChildSize: 0.4,
         maxChildSize: 0.95,
         expand: false,
-        builder: (_, controller) => SingleChildScrollView(
-          controller: controller,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
+        builder: (_, controller) => Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [_darkBg, _darkBg2],
+            ),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            border: Border(top: BorderSide(color: _border)),
+          ),
+          child: SingleChildScrollView(
+            controller: controller,
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.flight, color: Color(0xFF065F46)),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Route ${data['RouteNumber'] ?? ''}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppTheme.lightGreen,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppTheme.secondaryGreen),
-                      ),
-                      child: Text(
-                        (data['Status']?.toString() ?? '').toUpperCase(),
-                        style: const TextStyle(
-                          color: AppTheme.darkGreen,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${_fmtDate(data['RouteDate']?.toString())} • AC: ${data['ACType'] ?? 'N/A'}',
-                ),
-                if (data['EndDate'] != null)
-                  Text('Ends: ${_fmtDate(data['EndDate']?.toString())}'),
-                const SizedBox(height: 16),
-
-                const Text(
-                  'Flights',
-                  style: TextStyle(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 8),
-                ...flights.map(
-                  (f) => Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.all(12),
+                Center(
+                  child: Container(
+                    width: 38,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF9FAFB),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.grey[200]!),
+                      color: Colors.white.withValues(alpha: 0.25),
+                      borderRadius: BorderRadius.circular(2),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              f['FlightNo']?.toString() ?? 'N/A',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                              ),
+                  ),
+                ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: _border),
+                      ),
+                      child: const Icon(Icons.flight, color: _accent, size: 26),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Route ${data['RouteNumber'] ?? ''}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
                             ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${_fmtDate(data['RouteDate']?.toString())} • AC: ${data['ACType'] ?? 'N/A'}',
+                            style: const TextStyle(
+                              color: _softText,
+                              fontSize: 13,
+                            ),
+                          ),
+                          if (data['EndDate'] != null)
                             Text(
-                              _fmtDate(f['FlightDate']?.toString()),
-                              style: TextStyle(
-                                color: Colors.grey[600],
+                              'Ends: ${_fmtDate(data['EndDate']?.toString())}',
+                              style: const TextStyle(
+                                color: _softText,
                                 fontSize: 12,
                               ),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          '${f['DepPort'] ?? 'N/A'} (${f['DepTime'] ?? 'N/A'}) → ${f['ArrPort'] ?? 'N/A'} (${f['ArrTime'] ?? 'N/A'})',
-                        ),
-                        const SizedBox(height: 6),
-                        Wrap(
-                          spacing: 8,
-                          children: [
-                            _badge('AC ${f['ACType'] ?? 'N/A'}'),
-                            _badge('RG ${f['ReportingGroup'] ?? 'N/A'}'),
-                            _badge('Status ${f['Status'] ?? 'N/A'}'),
-                          ],
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-                const Text(
-                  'Crew Members',
-                  style: TextStyle(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 8),
-                ...crew.map(
-                  (c) => Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF9FAFB),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.grey[200]!),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '${c['name'] ?? 'Unknown'} • ${c['p_no'] ?? ''}',
+                    if (statusText.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: statusBg,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: statusBorder),
+                        ),
+                        child: Text(
+                          statusText,
+                          style: TextStyle(
+                            color: statusColor,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                        Wrap(
-                          spacing: 8,
-                          children: [
-                            _badge(c['position']?.toString() ?? 'N/A'),
-                            _badge(c['category']?.toString() ?? 'N/A'),
-                            _badge(c['duty']?.toString() ?? 'N/A'),
-                          ],
-                        ),
-                      ],
-                    ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Flights',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
                   ),
                 ),
+                const SizedBox(height: 12),
+                if (flights.isEmpty)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: _border),
+                    ),
+                    child: const Text(
+                      'No flights scheduled for this route.',
+                      style: TextStyle(color: _softText),
+                    ),
+                  )
+                else
+                  ...flights.map(
+                    (f) => Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: _cardBg,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: _border),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                f['FlightNo']?.toString() ?? 'N/A',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              Text(
+                                _fmtDate(f['FlightDate']?.toString()),
+                                style: const TextStyle(
+                                  color: _softText,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            '${f['DepPort'] ?? 'N/A'} (${f['DepTime'] ?? 'N/A'}) → ${f['ArrPort'] ?? 'N/A'} (${f['ArrTime'] ?? 'N/A'})',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 6,
+                            children: [
+                              _badge('AC ${f['ACType'] ?? 'N/A'}'),
+                              _badge('RG ${f['ReportingGroup'] ?? 'N/A'}'),
+                              _badge('Status ${f['Status'] ?? 'N/A'}'),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Crew Members',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                if (crew.isEmpty)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: _border),
+                    ),
+                    child: const Text(
+                      'No crew assignments available.',
+                      style: TextStyle(color: _softText),
+                    ),
+                  )
+                else
+                  ...crew.map(
+                    (c) => Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: _cardBg,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: _border),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${c['name'] ?? 'Unknown'} • ${c['p_no'] ?? ''}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Duty: ${c['duty'] ?? 'N/A'}',
+                                  style: const TextStyle(
+                                    color: _softText,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 6,
+                            children: [
+                              _badge(c['position']?.toString() ?? 'N/A'),
+                              _badge(c['category']?.toString() ?? 'N/A'),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -532,17 +750,17 @@ class _RouteDetailsSheet extends StatelessWidget {
   }
 
   Widget _badge(String text) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
     decoration: BoxDecoration(
-      color: const Color(0xFFF0FDF4),
+      color: _accent.withValues(alpha: 0.12),
       borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: AppTheme.secondaryGreen),
+      border: Border.all(color: _accent.withValues(alpha: 0.25)),
     ),
     child: Text(
       text,
       style: const TextStyle(
         fontSize: 11,
-        color: Color(0xFF065F46),
+        color: _accent,
         fontWeight: FontWeight.w600,
       ),
     ),
