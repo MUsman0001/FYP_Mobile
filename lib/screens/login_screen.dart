@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
 import '../core/api_client.dart';
 import '../features/auth/auth_api.dart';
 import '../features/auth/auth_repository.dart';
@@ -78,7 +79,21 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } catch (e) {
-      setState(() => errorText = 'Login failed. Check P No and password.');
+      var message = 'Login failed. Check P No and password.';
+
+      if (e is DioException) {
+        final serverMessage = e.response?.data?['message']?.toString();
+        final lower = serverMessage?.toLowerCase();
+
+        if (lower != null && lower.contains('inactive')) {
+          message =
+              'Your account is currently inactive. Please contact your administrator.';
+        } else if (serverMessage != null && serverMessage.isNotEmpty) {
+          message = serverMessage;
+        }
+      }
+
+      setState(() => errorText = message);
     } finally {
       if (mounted) setState(() => isLoading = false);
     }

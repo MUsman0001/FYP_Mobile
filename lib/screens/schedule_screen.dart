@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../features/schedule/schedule_repository.dart';
 import '../features/schedule/schedule_api.dart';
 import '../core/api_client.dart';
-import '../core/app_theme.dart';
 
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
@@ -18,6 +17,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   late final ScheduleRepository scheduleRepository;
   final Set<int> _expanded = <int>{};
   final Map<int, String> _activeTab = <int, String>{}; // 'flights' or 'crew'
+
+  // Palette for consistency with auth/home screens
+  static const Color _darkBg = Color(0xFF0f172a);
+  static const Color _darkBg2 = Color(0xFF0b1224);
+  static const Color _cardBg = Color(0xFF111a2e);
+  static const Color _accent = Color(0xFF14b8a6);
+  static const Color _border = Color(0xFF1f2b3f);
+  static const Color _softText = Color(0xFF94a3b8);
 
   bool _isCompact(BuildContext context) =>
       MediaQuery.of(context).size.width < 480;
@@ -57,32 +64,89 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        title: const Text('My Flight Schedule'),
-        backgroundColor: AppTheme.primaryGreen,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _refreshSchedules,
-            tooltip: 'Refresh',
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [_darkBg, _darkBg2],
           ),
-        ],
-      ),
-      body: isLoading
-          ? const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  AppTheme.primaryGreen,
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: _border),
+                  ),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: () {
+                          if (Navigator.of(context).canPop()) {
+                            Navigator.of(context).pop();
+                          }
+                        },
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        tooltip: 'Back',
+                      ),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          'My Flight Schedule',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: _accent.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: IconButton(
+                          constraints: const BoxConstraints(),
+                          padding: EdgeInsets.zero,
+                          onPressed: _refreshSchedules,
+                          icon: const Icon(Icons.refresh, color: Colors.white),
+                          tooltip: 'Refresh',
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            )
-          : error != null
-          ? _buildErrorWidget()
-          : schedules.isEmpty
-          ? _buildEmptyWidget()
-          : _buildScheduleList(),
+              Expanded(
+                child: isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(_accent),
+                        ),
+                      )
+                    : error != null
+                    ? _buildErrorWidget()
+                    : schedules.isEmpty
+                    ? _buildEmptyWidget()
+                    : _buildScheduleList(),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -93,20 +157,21 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+            Icon(Icons.error_outline, size: 56, color: Colors.red[300]),
             const SizedBox(height: 16),
-            Text(
+            const Text(
               'Error Loading Schedule',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: Colors.red[700],
-                fontWeight: FontWeight.bold,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               error ?? 'Unknown error occurred',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.red[600]),
+              style: const TextStyle(color: Colors.white70),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
@@ -114,8 +179,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               icon: const Icon(Icons.refresh),
               label: const Text('Retry'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryGreen,
-                foregroundColor: Colors.white,
+                backgroundColor: _accent,
+                foregroundColor: _darkBg,
               ),
             ),
           ],
@@ -131,20 +196,21 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.schedule_outlined, size: 64, color: Colors.grey[400]),
+            Icon(Icons.schedule_outlined, size: 56, color: Colors.white24),
             const SizedBox(height: 16),
-            Text(
+            const Text(
               'No Schedule Found',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: Colors.grey[600],
-                fontWeight: FontWeight.bold,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'You don\'t have any scheduled duties at the moment.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[500]),
+              style: const TextStyle(color: Colors.white70),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
@@ -152,8 +218,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               icon: const Icon(Icons.refresh),
               label: const Text('Refresh'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryGreen,
-                foregroundColor: Colors.white,
+                backgroundColor: _accent,
+                foregroundColor: _darkBg,
               ),
             ),
           ],
@@ -165,7 +231,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Widget _buildScheduleList() {
     return RefreshIndicator(
       onRefresh: _refreshSchedules,
-      color: AppTheme.primaryGreen,
+      color: _accent,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: schedules.length,
@@ -196,16 +262,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _cardBg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: _border),
       ),
       child: Column(
         children: [
@@ -222,12 +281,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8F9FA),
+                color: Colors.white.withValues(alpha: 0.04),
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(16),
                   topRight: Radius.circular(16),
                 ),
-                border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
+                border: Border(bottom: BorderSide(color: _border)),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -255,10 +314,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   AnimatedRotation(
                     duration: const Duration(milliseconds: 200),
                     turns: isExpanded ? 0.5 : 0,
-                    child: Icon(
-                      Icons.expand_more,
-                      color: AppTheme.primaryGreen,
-                    ),
+                    child: Icon(Icons.expand_more, color: _accent),
                   ),
                 ],
               ),
@@ -310,9 +366,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         style: TextButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 14),
           backgroundColor: active
-              ? const Color(0xFFF0FDF4)
+              ? _accent.withValues(alpha: 0.15)
               : Colors.transparent,
-          foregroundColor: active ? AppTheme.primaryGreen : Colors.grey[600],
+          foregroundColor: active ? _accent : Colors.grey[300],
           shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         ),
         child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
@@ -373,9 +429,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFFF9FAFB),
+          color: _cardBg,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey[200]!),
+          border: Border.all(color: _border),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -385,12 +441,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               children: [
                 Text(
                   f['FlightNo']?.toString() ?? 'N/A',
-                  style: const TextStyle(fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
                 ),
-                Text(
-                  date,
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                ),
+                Text(date, style: TextStyle(color: _softText, fontSize: 12)),
               ],
             ),
             const SizedBox(height: 6),
@@ -405,7 +461,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 Expanded(
                   child: Text(
                     '$dep ($depTime) → $arr ($arrTime)',
-                    style: const TextStyle(fontSize: 13),
+                    style: const TextStyle(fontSize: 13, color: Colors.white),
                   ),
                 ),
               ],
@@ -418,13 +474,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               children: [
                 _chip(
                   text: acType,
-                  bg: Colors.blue[50]!,
-                  fg: Colors.blue[800]!,
+                  bg: _accent.withValues(alpha: 0.15),
+                  fg: _accent,
                 ),
                 _buildStatusChip(status),
                 Text(
                   'RG: $rg',
-                  style: TextStyle(color: Colors.grey[700], fontSize: 12),
+                  style: TextStyle(color: _softText, fontSize: 12),
                 ),
               ],
             ),
@@ -437,9 +493,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF9FAFB),
+        color: _cardBg,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: _border),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -467,9 +523,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF9FAFB),
+        color: _cardBg,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: _border),
       ),
       child: Row(
         children: [
@@ -480,14 +536,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 Text(
                   name,
                   style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF111827),
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   'P-No: $pno',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  style: TextStyle(color: _softText, fontSize: 12),
                 ),
               ],
             ),
@@ -497,18 +553,18 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             children: [
               _chip(
                 text: position,
-                bg: Colors.blue[50]!,
-                fg: Colors.blue[800]!,
+                bg: _accent.withValues(alpha: 0.15),
+                fg: _accent,
               ),
               _chip(
                 text: category,
-                bg: const Color(0xFFECFCCB),
-                fg: const Color(0xFF365314),
+                bg: Colors.white.withValues(alpha: 0.06),
+                fg: Colors.white,
               ),
               _chip(
                 text: duty,
-                bg: const Color(0xFFFEF3C7),
-                fg: const Color(0xFF92400E),
+                bg: Colors.orange.withValues(alpha: 0.12),
+                fg: Colors.orangeAccent,
               ),
             ],
           ),
@@ -535,7 +591,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
+        border: Border(bottom: BorderSide(color: _border)),
       ),
       child: Row(
         children: cols
@@ -545,7 +601,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 child: Text(
                   c,
                   style: TextStyle(
-                    color: Colors.grey[600],
+                    color: _softText,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -562,7 +618,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       child: Text(
         text,
         style: TextStyle(
-          fontWeight: bold ? FontWeight.w600 : FontWeight.normal,
+          fontWeight: bold ? FontWeight.w700 : FontWeight.normal,
+          color: Colors.white,
         ),
       ),
     );
@@ -575,9 +632,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
-            color: Color(0xFF6B7280),
+            color: _softText,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -586,8 +643,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           value,
           style: const TextStyle(
             fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF111827),
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
           ),
         ),
       ],
@@ -601,17 +658,17 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     switch (status?.toLowerCase()) {
       case 'published':
       case 'active':
-        backgroundColor = AppTheme.lightGreen;
-        textColor = AppTheme.darkGreen;
+        backgroundColor = _accent.withValues(alpha: 0.15);
+        textColor = _accent;
         break;
       case 'completed':
       case 'cancelled':
-        backgroundColor = Colors.red[50]!;
-        textColor = Colors.red[700]!;
+        backgroundColor = Colors.red.withValues(alpha: 0.12);
+        textColor = Colors.redAccent;
         break;
       default:
-        backgroundColor = Colors.grey[100]!;
-        textColor = Colors.grey[700]!;
+        backgroundColor = Colors.white.withValues(alpha: 0.08);
+        textColor = Colors.white70;
     }
 
     return Container(
