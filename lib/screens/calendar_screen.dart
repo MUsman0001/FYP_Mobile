@@ -21,6 +21,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
   List<Appointment> _appointments = <Appointment>[];
   String? _loadedMonthKey; // e.g. 2025-09
 
+  // Palette for consistency with schedule/home screens
+  static const Color _darkBg = Color(0xFF0f172a);
+  static const Color _darkBg2 = Color(0xFF0b1224);
+  static const Color _accent = Color(0xFF14b8a6);
+  static const Color _border = Color(0xFF1f2b3f);
+  static const Color _softText = Color(0xFF94a3b8);
+
   @override
   void initState() {
     super.initState();
@@ -111,121 +118,221 @@ class _CalendarScreenState extends State<CalendarScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        title: const Text('Calendar'),
-        backgroundColor: AppTheme.primaryGreen,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left),
-            onPressed: () {
-              setState(() {
-                focusedMonth = DateTime(
-                  focusedMonth.year,
-                  focusedMonth.month - 1,
-                );
-                _controller.displayDate = focusedMonth;
-              });
-              _loadEventsForMonth(focusedMonth);
-            },
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [_darkBg, _darkBg2],
           ),
-          IconButton(
-            icon: const Icon(Icons.today),
-            onPressed: () {
-              setState(() {
-                focusedMonth = DateTime(
-                  DateTime.now().year,
-                  DateTime.now().month,
-                );
-                _controller.displayDate = focusedMonth;
-              });
-              _loadEventsForMonth(focusedMonth);
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.chevron_right),
-            onPressed: () {
-              setState(() {
-                focusedMonth = DateTime(
-                  focusedMonth.year,
-                  focusedMonth.month + 1,
-                );
-                _controller.displayDate = focusedMonth;
-              });
-              _loadEventsForMonth(focusedMonth);
-            },
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          if (error != null)
-            Container(
-              width: double.infinity,
-              color: Colors.amber[50],
-              padding: const EdgeInsets.all(8),
-              child: Row(
-                children: [
-                  const Icon(Icons.info_outline, color: Colors.amber),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Some calendar data could not be loaded. Showing month without events.',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          Expanded(
-            child: Stack(
-              children: [
-                SfCalendar(
-                  view: CalendarView.month,
-                  controller: _controller,
-                  dataSource: _RouteDataSource(_appointments),
-                  firstDayOfWeek: 7, // Sunday
-                  todayHighlightColor: AppTheme.primaryGreen,
-                  showDatePickerButton: false,
-                  monthViewSettings: const MonthViewSettings(
-                    appointmentDisplayMode:
-                        MonthAppointmentDisplayMode.appointment,
-                    showAgenda: false,
-                  ),
-                  onViewChanged: (details) {
-                    final visible = details.visibleDates;
-                    if (visible.isNotEmpty) {
-                      final mid = visible[visible.length ~/ 2];
-                      final month = DateTime(mid.year, mid.month);
-                      if (month.year != focusedMonth.year ||
-                          month.month != focusedMonth.month) {
-                        focusedMonth = month;
-                        _loadEventsForMonth(focusedMonth);
-                      }
-                    }
-                  },
-                  onTap: (details) {
-                    if ((details.appointments?.isNotEmpty ?? false)) {
-                      final app = details.appointments!.first as Appointment;
-                      final routeNo = app.notes;
-                      if (routeNo is String && routeNo.isNotEmpty) {
-                        _openRouteDetails(routeNo);
-                      }
-                    }
-                  },
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
                 ),
-                if (isLoading)
-                  const Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        AppTheme.primaryGreen,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: _border),
+                  ),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: () {
+                          if (Navigator.of(context).canPop()) {
+                            Navigator.of(context).pop();
+                          }
+                        },
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        tooltip: 'Back',
+                      ),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          'Calendar',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.chevron_left,
+                          color: Colors.white,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            focusedMonth = DateTime(
+                              focusedMonth.year,
+                              focusedMonth.month - 1,
+                            );
+                            _controller.displayDate = focusedMonth;
+                          });
+                          _loadEventsForMonth(focusedMonth);
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.today, color: Colors.white),
+                        onPressed: () {
+                          setState(() {
+                            focusedMonth = DateTime(
+                              DateTime.now().year,
+                              DateTime.now().month,
+                            );
+                            _controller.displayDate = focusedMonth;
+                          });
+                          _loadEventsForMonth(focusedMonth);
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.chevron_right,
+                          color: Colors.white,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            focusedMonth = DateTime(
+                              focusedMonth.year,
+                              focusedMonth.month + 1,
+                            );
+                            _controller.displayDate = focusedMonth;
+                          });
+                          _loadEventsForMonth(focusedMonth);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  children: [
+                    if (error != null)
+                      Container(
+                        width: double.infinity,
+                        color: Colors.amber.withValues(alpha: 0.1),
+                        padding: const EdgeInsets.all(8),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.info_outline, color: Colors.amber),
+                            const SizedBox(width: 8),
+                            const Expanded(
+                              child: Text(
+                                'Some calendar data could not be loaded. Showing month without events.',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    Expanded(
+                      child: Stack(
+                        children: [
+                          SfCalendar(
+                            view: CalendarView.month,
+                            controller: _controller,
+                            dataSource: _RouteDataSource(_appointments),
+                            firstDayOfWeek: 7, // Sunday
+                            todayHighlightColor: _accent,
+                            todayTextStyle: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            showDatePickerButton: false,
+                            backgroundColor: Colors.transparent,
+                            cellBorderColor: _border.withValues(alpha: 0.5),
+                            headerHeight: 48,
+                            viewHeaderHeight: 36,
+                            headerStyle: const CalendarHeaderStyle(
+                              textStyle: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              backgroundColor: Colors.transparent,
+                            ),
+                            viewHeaderStyle: const ViewHeaderStyle(
+                              backgroundColor: Colors.transparent,
+                              dayTextStyle: TextStyle(
+                                color: Colors.white70,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                              ),
+                            ),
+                            monthViewSettings: MonthViewSettings(
+                              appointmentDisplayMode:
+                                  MonthAppointmentDisplayMode.indicator,
+                              showAgenda: false,
+                              monthCellStyle: MonthCellStyle(
+                                backgroundColor: Colors.transparent,
+                                textStyle: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                leadingDatesTextStyle: TextStyle(
+                                  color: _softText.withValues(alpha: 0.4),
+                                ),
+                                trailingDatesTextStyle: TextStyle(
+                                  color: _softText.withValues(alpha: 0.4),
+                                ),
+                                todayBackgroundColor: _accent,
+                              ),
+                            ),
+                            onViewChanged: (details) {
+                              final visible = details.visibleDates;
+                              if (visible.isNotEmpty) {
+                                final mid = visible[visible.length ~/ 2];
+                                final month = DateTime(mid.year, mid.month);
+                                if (month.year != focusedMonth.year ||
+                                    month.month != focusedMonth.month) {
+                                  focusedMonth = month;
+                                  _loadEventsForMonth(focusedMonth);
+                                }
+                              }
+                            },
+                            onTap: (details) {
+                              if ((details.appointments?.isNotEmpty ?? false)) {
+                                final app =
+                                    details.appointments!.first as Appointment;
+                                final routeNo = app.notes;
+                                if (routeNo is String && routeNo.isNotEmpty) {
+                                  _openRouteDetails(routeNo);
+                                }
+                              }
+                            },
+                          ),
+                          if (isLoading)
+                            const Center(
+                              child: CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  _accent,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
-                  ),
-              ],
-            ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
