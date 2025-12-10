@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../core/api_client.dart';
 import '../features/auth/auth_api.dart';
 import '../features/auth/auth_repository.dart';
+import '../features/notifications/notifications_service.dart';
+import '../features/notifications/screens/notifications_screen.dart';
 import 'login_screen.dart';
 import 'schedule_screen.dart';
 import 'calendar_screen.dart';
@@ -36,6 +38,8 @@ class _HomeScreenState extends State<HomeScreen> {
       storage: api.client.secureStorage,
     );
     _loadUser();
+    // fetch unread notifications badge
+    NotificationsService.I.refreshUnreadCount();
   }
 
   Future<void> _loadUser() async {
@@ -138,6 +142,60 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 ],
                               ),
+                            ),
+                            // Notifications icon with badge
+                            ValueListenableBuilder<int>(
+                              valueListenable:
+                                  NotificationsService.I.unreadCount,
+                              builder: (context, unread, _) {
+                                return Stack(
+                                  alignment: Alignment.topRight,
+                                  children: [
+                                    IconButton(
+                                      onPressed: () async {
+                                        await Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                const NotificationsScreen(),
+                                          ),
+                                        );
+                                        // Refresh count when returning
+                                        NotificationsService.I
+                                            .refreshUnreadCount();
+                                      },
+                                      icon: const Icon(
+                                        Icons.notifications,
+                                        color: Colors.white,
+                                      ),
+                                      tooltip: 'Notifications',
+                                    ),
+                                    if (unread > 0)
+                                      Positioned(
+                                        right: 8,
+                                        top: 8,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.redAccent,
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            unread > 99 ? '99+' : '$unread',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                );
+                              },
                             ),
                             IconButton(
                               onPressed: _logout,

@@ -1,5 +1,6 @@
 import '../../core/secure_storage.dart';
 import 'auth_api.dart';
+import '../notifications/notifications_service.dart';
 
 class AuthRepository {
   final AuthApi api;
@@ -19,6 +20,9 @@ class AuthRepository {
     if (!result.requiresMfa && result.token != null) {
       // MFA not required - save token immediately
       await storage.saveToken(result.token!);
+      // Register device token in background (best-effort)
+      // Initialize push and send token to backend
+      await NotificationsService.I.initPushIfPossible();
     }
 
     return (
@@ -36,6 +40,8 @@ class AuthRepository {
     final (token, user) = await api.verifyMfa(userId: userId, code: code);
     // Save token after MFA verification
     await storage.saveToken(token);
+    // Register device token post-auth
+    await NotificationsService.I.initPushIfPossible();
     return user;
   }
 
@@ -48,9 +54,12 @@ class AuthRepository {
 
   Future<void> logout() async {
     try {
+      // Try to deregister device token first (best-effort)
+      await NotificationsService.I.deregisterDeviceTokenIfAny();
       await api.logout();
     } finally {
       await storage.deleteToken();
+      await storage.deleteDeviceToken();
     }
   }
 

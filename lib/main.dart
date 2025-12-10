@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'features/notifications/notifications_service.dart';
 import 'core/api_client.dart';
 import 'features/auth/auth_api.dart';
 import 'features/auth/auth_repository.dart';
@@ -7,6 +8,8 @@ import 'screens/home_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  // Initialize push service early (best-effort, safe if Firebase missing)
+  NotificationsService.I.initPushIfPossible();
   runApp(const MyApp());
 }
 
