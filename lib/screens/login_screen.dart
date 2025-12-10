@@ -139,43 +139,61 @@ class _LoginScreenState extends State<LoginScreen> {
                     // Top spacing
                     const SizedBox(height: 20),
 
-                    // Logo with icon
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: tealAccent,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.check_circle,
-                          color: darkBg,
-                          size: 32,
+                    // Logo image (no backdrop) enlarged
+                    SizedBox(
+                      width: 128,
+                      height: 128,
+                      child: ColorFiltered(
+                        colorFilter: const ColorFilter.mode(
+                          tealAccent,
+                          BlendMode.srcIn,
+                        ),
+                        child: Image.asset(
+                          'assets/images/logo-new.png',
+                          fit: BoxFit.contain,
+                          filterQuality: FilterQuality.high,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 10),
 
-                    // App name
-                    const Text(
-                      'AeroCrew Flow',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        letterSpacing: 0.5,
+                    // App name with dual-tone accent
+                    RichText(
+                      textAlign: TextAlign.center,
+                      text: const TextSpan(
+                        children: [
+                          TextSpan(
+                            text: 'AeroCrew ',
+                            style: TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.4,
+                              color: Colors.white,
+                            ),
+                          ),
+                          TextSpan(
+                            text: 'Flow',
+                            style: TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.4,
+                              color: tealAccent,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
 
-                    // Subtitle
+                    // Subtitle refined for clarity
                     const Text(
-                      'Flight Management System',
+                      'Your schedule, your runway.',
+                      textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 13,
-                        color: tealAccent,
+                        fontWeight: FontWeight.w500,
                         letterSpacing: 0.3,
+                        color: Color(0xFF94a3b8),
                       ),
                     ),
                     const SizedBox(height: 40),
