@@ -72,10 +72,22 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         );
-      } else {
+      } else if (!result.requiresMfa) {
         // MFA not required, go to home
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      } else {
+        // MFA required but userId missing - show message
+        setState(() {
+          errorText =
+              'MFA required, but verification data is missing. Please try again.';
+        });
+        // Optional: small visual nudge
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to continue login. Please try again.'),
+          ),
         );
       }
     } catch (e) {
