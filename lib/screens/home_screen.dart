@@ -380,6 +380,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ? 'Active'
                                   : (status.isEmpty ? 'Unknown' : status),
                             ),
+                            _infoRow(
+                              Icons.security,
+                              'Roles',
+                              _formatRoles(user?['roles']),
+                            ),
                           ],
                         ),
                       ),
@@ -389,6 +394,26 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  String _formatRoles(dynamic roles) {
+    if (roles == null) return '—';
+    if (roles is List) {
+      // Handle list of strings or list of maps
+      final names = roles
+          .map((e) {
+            if (e is String) return e;
+            if (e is Map && e.containsKey('role_name')) {
+              return e['role_name']?.toString() ?? '';
+            }
+            return e.toString();
+          })
+          .where((s) => s.isNotEmpty)
+          .toList();
+      return names.isEmpty ? '—' : names.join(', ');
+    }
+    // Fallback for unexpected types
+    return roles.toString();
   }
 
   Widget _miniStat(String label, String value) {
