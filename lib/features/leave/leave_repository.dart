@@ -1,5 +1,6 @@
 import 'leave_api.dart';
 import 'models/leave_request.dart';
+import 'models/leave_type_rule.dart';
 
 class LeaveRepository {
   final LeaveApi api;
@@ -26,47 +27,55 @@ class LeaveRepository {
 
   /// Submit a new leave request
   Future<LeaveRequest> submitLeaveRequest({
-    required LeaveType leaveType,
+    required LeaveTypeRule rule,
     required DateTime startDate,
     required DateTime endDate,
     String? medicalDocumentPath,
   }) async {
-    // Validate that sick leave has medical document
-    if (leaveType.requiresMedicalDocument &&
-        (medicalDocumentPath == null || medicalDocumentPath.isEmpty)) {
+    // Enforce min notice: start >= today + min_notice_days
+    final today = DateTime.now();
+    final earliest = DateTime(
+      today.year,
+      today.month,
+      today.day,
+    ).add(Duration(days: rule.minNoticeDays));
+    final startOnly = DateTime(startDate.year, startDate.month, startDate.day);
+    if (startOnly.isBefore(earliest)) {
       throw Exception(
-        'Medical document is required for ${leaveType.displayName}',
+        'You must apply at least ${rule.minNoticeDays} day(s) in advance for ${rule.name}',
       );
     }
 
-    // Validate dates
+    // Validate end >= start
     if (endDate.isBefore(startDate)) {
       throw Exception('End date must be after or equal to start date');
     }
 
-    // Validate start date is not in the past
-    final today = DateTime.now();
-    final todayDate = DateTime(today.year, today.month, today.day);
-    final startDateOnly = DateTime(
-      startDate.year,
-      startDate.month,
-      startDate.day,
-    );
-
-    if (startDateOnly.isBefore(todayDate)) {
-      throw Exception('Start date cannot be in the past');
+    // Calculate days and enforce max duration
+    final daysOfLeave = endDate.difference(startDate).inDays + 1;
+    if (daysOfLeave > rule.maxDurationDays) {
+      throw Exception(
+        'Maximum allowed duration for ${rule.name} is ${rule.maxDurationDays} days',
+      );
     }
 
-    // Calculate days of leave
-    final daysOfLeave = endDate.difference(startDate).inDays + 1;
+    // Enforce PDF requirement
+    if (rule.pdfRequired &&
+        (medicalDocumentPath == null || medicalDocumentPath.isEmpty)) {
+      throw Exception('Medical document (PDF) is required for this leave type');
+    }
 
     return await api.createLeaveRequest(
-      leaveReason: leaveType.displayName,
+      leaveReason: rule.name,
       daysOfLeave: daysOfLeave,
       startDate: startDate,
       endDate: endDate,
       medicalDocumentPath: medicalDocumentPath,
     );
+  }
+
+  Future<List<LeaveTypeRule>> getLeaveTypes() async {
+    return await api.getLeaveTypes();
   }
 
   /// Delete/remove a pending leave request (permanently removes it)

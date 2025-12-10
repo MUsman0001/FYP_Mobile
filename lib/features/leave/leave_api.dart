@@ -1,11 +1,25 @@
 import 'package:dio/dio.dart';
 import '../../core/api_client.dart';
 import 'models/leave_request.dart';
+import 'models/leave_type_rule.dart';
 
 class LeaveApi {
   final ApiClient client;
 
   LeaveApi(this.client);
+
+  /// Fetch available leave types and their rules
+  /// GET /leave-types
+  Future<List<LeaveTypeRule>> getLeaveTypes() async {
+    final response = await client.get('/leave-types');
+    final success = response['success'] == true;
+    final data = success
+        ? response['data'] as List<dynamic>
+        : (response as List<dynamic>? ?? []);
+    return data
+        .map((e) => LeaveTypeRule.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
 
   /// Get list of leave requests with optional filters
   /// GET /crew/leave-requests

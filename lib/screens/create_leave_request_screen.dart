@@ -5,7 +5,8 @@ import '../core/api_client.dart';
 import '../core/app_theme.dart';
 import '../features/leave/leave_api.dart';
 import '../features/leave/leave_repository.dart';
-import '../features/leave/models/leave_request.dart';
+// import '../features/leave/models/leave_request.dart';
+import '../features/leave/models/leave_type_rule.dart';
 
 const Color _darkBg = Color(0xFF0f172a);
 const Color _darkBg2 = Color(0xFF0b1224);
@@ -26,7 +27,8 @@ class _CreateLeaveRequestScreenState extends State<CreateLeaveRequestScreen> {
   final _formKey = GlobalKey<FormState>();
   late final LeaveRepository leaveRepository;
 
-  LeaveType _selectedLeaveType = LeaveType.annualLeave;
+  List<LeaveTypeRule> _leaveTypes = [];
+  LeaveTypeRule? _selectedRule;
   DateTime _startDate = DateTime.now();
   DateTime _endDate = DateTime.now();
   final TextEditingController _reasonController = TextEditingController();
@@ -39,6 +41,35 @@ class _CreateLeaveRequestScreenState extends State<CreateLeaveRequestScreen> {
     super.initState();
     final api = LeaveApi(ApiClient());
     leaveRepository = LeaveRepository(api: api);
+    _loadLeaveTypes();
+  }
+
+  Future<void> _loadLeaveTypes() async {
+    try {
+      final types = await leaveRepository.getLeaveTypes();
+      setState(() {
+        _leaveTypes = types;
+        if (_leaveTypes.isNotEmpty) {
+          _selectedRule = _leaveTypes.first;
+          // Adjust earliest start date based on min_notice_days
+          final today = DateTime.now();
+          _startDate = DateTime(
+            today.year,
+            today.month,
+            today.day,
+          ).add(Duration(days: _selectedRule!.minNoticeDays));
+          _endDate = _startDate;
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to load leave types: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -49,7 +80,10 @@ class _CreateLeaveRequestScreenState extends State<CreateLeaveRequestScreen> {
 
   Future<void> _selectDate(BuildContext context, bool isStartDate) async {
     final initialDate = isStartDate ? _startDate : _endDate;
-    final firstDate = isStartDate ? DateTime.now() : _startDate;
+    final earliestStart = DateTime.now().add(
+      Duration(days: _selectedRule?.minNoticeDays ?? 0),
+    );
+    final firstDate = isStartDate ? earliestStart : _startDate;
 
     final picked = await showDatePicker(
       context: context,
@@ -120,12 +154,14 @@ class _CreateLeaveRequestScreenState extends State<CreateLeaveRequestScreen> {
   Future<void> _submitRequest() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Validate medical document for sick leave
-    if (_selectedLeaveType.requiresMedicalDocument &&
+    // Validate medical document if required by rule
+    if ((_selectedRule?.pdfRequired ?? false) &&
         (_selectedFilePath == null || _selectedFilePath!.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Medical document is required for Sick Leave'),
+          content: Text(
+            'Medical document (PDF) is required for this leave type',
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -136,7 +172,7 @@ class _CreateLeaveRequestScreenState extends State<CreateLeaveRequestScreen> {
 
     try {
       await leaveRepository.submitLeaveRequest(
-        leaveType: _selectedLeaveType,
+        rule: _selectedRule!,
         startDate: _startDate,
         endDate: _endDate,
         medicalDocumentPath: _selectedFilePath,
@@ -254,39 +290,114 @@ class _CreateLeaveRequestScreenState extends State<CreateLeaveRequestScreen> {
                                 ),
                               ),
                               const SizedBox(height: 12),
-                              RadioGroup<LeaveType>(
-                                groupValue: _selectedLeaveType,
-                                onChanged: (value) {
-                                  if (value != null) {
-                                    setState(() => _selectedLeaveType = value);
-                                  }
-                                },
-                                child: Column(
-                                  children: LeaveType.values
+                              if (_leaveTypes.isEmpty)
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 8),
+                                  child: Text(
+                                    'Loading leave types...',
+                                    style: TextStyle(color: _softText),
+                                  ),
+                                )
+                              else
+                                Column(
+                                  children: _leaveTypes
                                       .map(
-                                        (type) => RadioListTile<LeaveType>(
-                                          title: Text(
-                                            type.displayName,
-                                            style: const TextStyle(
-                                              color: Colors.white,
+                                        (rule) => InkWell(
+                                          onTap: () {
+                                            setState(() {
+                                              _selectedRule = rule;
+                                              final today = DateTime.now();
+                                              final earliest =
+                                                  DateTime(
+                                                    today.year,
+                                                    today.month,
+                                                    today.day,
+                                                  ).add(
+                                                    Duration(
+                                                      days: rule.minNoticeDays,
+                                                    ),
+                                                  );
+                                              _startDate = earliest;
+                                              _endDate = _startDate;
+                                            });
+                                          },
+                                          child: Container(
+                                            margin: const EdgeInsets.symmetric(
+                                              vertical: 6,
+                                            ),
+                                            padding: const EdgeInsets.all(12),
+                                            decoration: BoxDecoration(
+                                              color: _cardBg,
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              border: Border.all(
+                                                color:
+                                                    _selectedRule?.id == rule.id
+                                                    ? _accent
+                                                    : _border,
+                                              ),
+                                            ),
+                                            child: Row(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Icon(
+                                                  _selectedRule?.id == rule.id
+                                                      ? Icons
+                                                            .radio_button_checked
+                                                      : Icons
+                                                            .radio_button_unchecked,
+                                                  color: _accent,
+                                                ),
+                                                const SizedBox(width: 10),
+                                                Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Text(
+                                                        rule.name,
+                                                        style: const TextStyle(
+                                                          color: Colors.white,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 4),
+                                                      Text(
+                                                        'Apply at least ${rule.minNoticeDays} day(s) in advance',
+                                                        style: const TextStyle(
+                                                          fontSize: 12,
+                                                          color: _softText,
+                                                        ),
+                                                      ),
+                                                      Text(
+                                                        'Max duration: ${rule.maxDurationDays} day(s)',
+                                                        style: const TextStyle(
+                                                          fontSize: 12,
+                                                          color: _softText,
+                                                        ),
+                                                      ),
+                                                      if (rule.pdfRequired)
+                                                        const Text(
+                                                          'Medical document required (PDF)',
+                                                          style: TextStyle(
+                                                            fontSize: 12,
+                                                            color:
+                                                                Colors.orange,
+                                                          ),
+                                                        ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
-                                          subtitle: type.requiresMedicalDocument
-                                              ? const Text(
-                                                  'Medical document required',
-                                                  style: TextStyle(
-                                                    fontSize: 12,
-                                                    color: Colors.orange,
-                                                  ),
-                                                )
-                                              : null,
-                                          value: type,
-                                          toggleable: false,
                                         ),
                                       )
                                       .toList(),
                                 ),
-                              ),
                             ],
                           ),
                         ),
@@ -488,8 +599,8 @@ class _CreateLeaveRequestScreenState extends State<CreateLeaveRequestScreen> {
                           ),
                         ),
 
-                        // Medical Document Card (for Sick Leave)
-                        if (_selectedLeaveType.requiresMedicalDocument) ...[
+                        // Medical Document Card (if required by selected rule)
+                        if (_selectedRule?.pdfRequired == true) ...[
                           const SizedBox(height: 16),
                           Container(
                             decoration: BoxDecoration(
